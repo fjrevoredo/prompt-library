@@ -1,0 +1,7 @@
+# Force LF on every checkout, including Windows.
+#
+# Two things break otherwise:
+#   - bash cannot execute sync-prompts.sh with CRLF line endings
+#   - Espanso expands `replace:` / `form:` bodies verbatim, so CRLF in a prompt
+#     file injects stray carriage returns into every expansion
+* text=auto eol=lf

@@ -1,0 +1,36 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/espanso/espanso/dev/schemas/match.schema.json
+matches:
+  - trigger: ":p.review"
+    label: "Prompt: thorough code review"
+    replace: |
+      Review the following change as a senior engineer who will have to maintain it.
+
+      Work in this order and report in this order:
+
+      1. Correctness — does it do what it claims? Look for off-by-one errors, wrong
+         boundary conditions, unhandled error paths, incorrect null/empty handling,
+         race conditions, and resource leaks. For each issue, give a concrete failing
+         scenario (inputs and resulting behavior), not a general worry.
+      2. Contract and compatibility — does it change any public API, schema, config
+         key, or on-disk format? If so, is the change backward compatible, and are
+         callers and migrations accounted for?
+      3. Security — untrusted input reaching a sink (query, shell, filesystem path,
+         deserializer, template), missing authorization checks, secrets in logs or
+         error messages, unsafe defaults.
+      4. Tests — what behavior in this change is untested? Name the specific cases
+         worth adding rather than asking for "more coverage".
+      5. Clarity and fit — does it match the conventions already used in the
+         surrounding code (naming, error handling, layering, comment density)?
+         Flag duplication that has an obvious existing helper.
+
+      Rules for your review:
+
+      - Distinguish blocking defects from optional improvements, and say which is which.
+      - Do not restate what the code does. Assume I have read it.
+      - If you are uncertain whether something is a bug, say so and state what you
+        would need to check to confirm it.
+      - Skip praise, style nitpicks a formatter would fix, and speculative
+        refactors that are outside the scope of this change.
+      - If the change looks correct, say that plainly instead of manufacturing findings.
+
+      The change:

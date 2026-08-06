@@ -1,0 +1,32 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/espanso/espanso/dev/schemas/match.schema.json
+matches:
+  - trigger: ":p.explain"
+    label: "Prompt template: explain code at a chosen depth"
+    # `form:` is the shorthand for a form-backed match and replaces `replace:`
+    # (the two are mutually exclusive). Long inputs such as [[code]] must sit
+    # alone on their line, otherwise Espanso renders the field ~100px wide.
+    form: |
+      Explain the following [[language]] code for a [[audience]].
+
+      Give a [[depth]]. Call out any non-obvious control flow, implicit
+      assumptions, and failure modes. If something is unclear from the code
+      alone, say what additional context you would need.
+
+      Code:
+      [[code]]
+    form_fields:
+      language:
+        default: "TypeScript"
+      audience:
+        type: choice
+        values:
+          - "engineer new to the codebase"
+          - "senior engineer"
+          - "non-technical stakeholder"
+      depth:
+        type: choice
+        values:
+          - "high-level summary"
+          - "line-by-line walkthrough"
+      code:
+        multiline: true

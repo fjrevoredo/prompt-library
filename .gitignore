@@ -1,0 +1,15 @@
+# macOS
+.DS_Store
+
+# Logs
+*.log
+
+# Build / temporary outputs
+.tmp/
+tmp/
+
+# Local editor / tooling noise
+.vscode/
+.idea/
+*.swp
+*.swo
