@@ -67,27 +67,26 @@ recipient can confirm it independently.
 The repo is authoritative. The Espanso config directory is a disposable mirror.
 
 1. Edit or add a `.yml` here.
-2. Sync it into the live config:
-
-   ```bash
-   bash sync-prompts.sh
-   ```
-
+2. Sync it into the live config — `bash sync-prompts.sh` on macOS and Linux,
+   `.\sync-prompts.ps1` on Windows.
 3. The prompt is live system-wide — no further steps.
 
 Preview a sync without writing anything:
 
 ```bash
-bash sync-prompts.sh --dry-run
+bash sync-prompts.sh --dry-run      # macOS / Linux
+```
+```powershell
+.\sync-prompts.ps1 -DryRun          # Windows
 ```
 
-Other flags:
+Other flags, same meaning in both scripts:
 
 | Flag | Effect |
 |---|---|
-| `--no-restart` | Sync and validate, but leave the running daemon alone |
-| `--target DIR` | Sync somewhere else (basename must be `prompt-library`); implies no validate/restart |
-| `-h`, `--help` | Usage |
+| `--no-restart` / `-NoRestart` | Sync and validate, but leave the running daemon alone |
+| `--target DIR` / `-Target DIR` | Sync somewhere else (basename must be `prompt-library`); implies no validate/restart |
+| `-h`, `--help` / `-?` | Usage |
 
 `ESPANSO_BIN` and `ESPANSO_CONFIG_DIR` override binary and config-dir lookup. Espanso honours
 `ESPANSO_CONFIG_DIR` too, so the script and the daemon stay in agreement.
@@ -107,30 +106,42 @@ resolves it itself; `espanso env-path register` is the official way to put it on
 
 ## Platforms
 
-| | Config directory | Copy tool | Espanso binary |
-|---|---|---|---|
-| macOS | `~/Library/Application Support/espanso` | `rsync` | `/Applications/Espanso.app/Contents/MacOS/espanso` |
-| Windows 10/11 | `%APPDATA%\espanso` | `rsync` if present, else `robocopy /MIR` | `PATH`, else probed under `Program Files` / `%LOCALAPPDATA%\Programs` |
-| Linux | `${XDG_CONFIG_HOME:-~/.config}/espanso` | `rsync` | `PATH` |
+There is **one script per platform family**, each written natively for its own environment rather than
+one script emulating the other:
 
-Resolution order is always `$ESPANSO_CONFIG_DIR` → `espanso path config` → the OS default above, so
-the table is only the last resort.
+| | Script | Config directory | Copy tool | Espanso binary |
+|---|---|---|---|---|
+| macOS | `sync-prompts.sh` | `~/Library/Application Support/espanso` | `rsync` | `/Applications/Espanso.app/Contents/MacOS/espanso` |
+| Linux | `sync-prompts.sh` | `${XDG_CONFIG_HOME:-~/.config}/espanso` | `rsync` | `PATH` |
+| Windows 10/11 | `sync-prompts.ps1` | `%APPDATA%\espanso` | `robocopy /MIR` | `PATH`, else probed under `Program Files` / `%LOCALAPPDATA%\Programs` |
+
+Both scripts take the same flags (`--dry-run` / `-DryRun` etc.), resolve the config directory in the
+same order — `$ESPANSO_CONFIG_DIR` → `espanso path config` → the OS default above — and apply the same
+`prompt-library` basename guard before deleting anything.
+
+Run the `.sh` on macOS and Linux; it exits immediately with a pointer to the `.ps1` if started from a
+Windows shell. WSL is *not* Windows for this purpose: `uname` reports Linux, WSL has its own Espanso
+and filesystem, so the `.sh` correctly targets `~/.config/espanso` there.
 
 ### Windows notes
 
-- **Run the script from Git Bash, MSYS2 or Cygwin.** It needs `bash` and `cygpath`; the script exits
-  early with a clear message if `cygpath` is missing.
-- **`rsync` is not part of Git for Windows.** When it's absent the script falls back to `robocopy`,
-  which ships with Windows 10/11 — so no extra installation is needed. `robocopy /MIR` is the
-  equivalent of `rsync --delete`, and its success exit codes (0–7) are handled explicitly.
-- **WSL is a separate machine.** `uname` reports Linux there, so the script targets WSL's own
-  `~/.config/espanso`, not the Windows Espanso. That's intentional — to manage a Windows install,
-  use Git Bash rather than WSL.
-- **Line endings are forced to LF** by `.gitattributes`. Without it a CRLF checkout would both break
-  `bash sync-prompts.sh` and inject stray carriage returns into every expansion. If you cloned before
-  that file existed, re-normalize with `git add --renormalize .`.
+```powershell
+.\sync-prompts.ps1 -DryRun
+.\sync-prompts.ps1
+```
+
+- **No extra tooling needed.** PowerShell 5.1 and `robocopy` both ship with Windows 10/11. Nothing to
+  install: no Git Bash, no `cygpath`, no `rsync`.
+- If PowerShell blocks the script, run it for the session with
+  `Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass`.
+- `robocopy /MIR` is the equivalent of `rsync --delete`; its success exit codes (0–7) are handled
+  explicitly, since only ≥8 means failure.
 - The Windows installer's directory is not documented upstream, so the script probes a few plausible
   locations. If it can't find the binary, set `ESPANSO_BIN` or run `espanso env-path register`.
+- **Line endings are forced to LF** by `.gitattributes`, because Espanso expands prompt bodies
+  verbatim and a CRLF checkout would inject stray carriage returns into every expansion. PowerShell
+  runs LF scripts fine. If you cloned before that file existed, re-normalize with
+  `git add --renormalize .`.
 
 ## Authoring conventions
 
@@ -181,7 +192,7 @@ the table is only the last resort.
    and let it register as a service: `espanso service register`, then `espanso start`.
 2. Optional but convenient: `espanso env-path register` to put the CLI on `PATH`.
 3. Clone this repo.
-4. `bash sync-prompts.sh` — on Windows, from Git Bash.
+4. `bash sync-prompts.sh`, or `.\sync-prompts.ps1` on Windows.
 5. **Set the paste timing by hand** in `<espanso config>/config/default.yml`. Not optional on macOS,
    and not managed by this repo:
 
@@ -247,8 +258,8 @@ If a bare `V` still appears after all of that, the remaining levers are `backend
 
 ### Other checks
 
-- `espanso status` — is it even running? A crashed worker leaves it stopped. `sync-prompts.sh`
-  verifies this after restarting, so a failing sync means the daemon really is down.
+- `espanso status` — is it even running? A crashed worker leaves it stopped. Both sync scripts
+  verify this after restarting, so a failing sync means the daemon really is down.
 - `espanso match list --only-triggers` — did your prompt load at all? If it's missing, the file is
   either invalid YAML, outside `match/`, or `_`-prefixed.
 - `espanso log` — the worker logs config-parse errors here.

@@ -144,23 +144,39 @@ implementation detail that varies per machine and per agent.
 
 ## Cross-platform expectations
 
-This library must work on macOS, Windows 10/11 and Linux. When touching `sync-prompts.sh`:
+This library must work on macOS, Windows 10/11 and Linux, via **one native script per platform
+family**:
 
-- Keep it POSIX-ish bash. Windows runs it under **Git Bash / MSYS2 / Cygwin**, where `cygpath` is
-  required to translate between drive-letter and POSIX paths — the script dies early if it's absent.
-- **`rsync` does not ship with Git for Windows.** The script falls back to `robocopy /MIR`
-  (`/MIR` == `/E` + `/PURGE`, the equivalent of `rsync --delete`). Do not remove that fallback, and
-  remember `robocopy` returns **0–7 on success** and ≥8 on failure, so it can never be tested as a
-  plain boolean under `set -e`.
-- Do not use `rsync -a` on a path that may be a Windows target: `-a` implies `-pgoD`, whose
-  ownership/permission preservation fails there. The script uses `-rlt`, which is sufficient for
-  plain yml.
-- Never pass a drive-letter path to `rsync`. It reads `C:\...` as a remote `host:path` and silently
-  tries SSH. Convert with `to_posix_path` first.
-- WSL reports `Linux` from `uname` and has its own Espanso and filesystem, so it is deliberately
-  treated as plain unix — not as a way to manage a Windows install.
+- `sync-prompts.sh` — macOS and Linux. Uses `rsync -a --delete`.
+- `sync-prompts.ps1` — Windows. Uses `robocopy /MIR`, which ships with Windows 10/11, so nothing
+  needs installing.
+
+An earlier version made the `.sh` cross-platform by running it under Git Bash with `cygpath`
+translation and a `robocopy` fallback. That was rejected: it required Git Bash *and* `cygpath` *and*
+one of two copy tools just to avoid writing a native script, and it pushed Windows-only complexity
+into the common macOS path. **Do not reintroduce it.** The `.sh` now detects `MINGW*`/`MSYS*`/`CYGWIN*`
+and exits pointing at the `.ps1`.
+
+The two scripts are intentional duplication, so keep them in step. Both must preserve:
+
+- The **basename guard** — the sync target's leaf must be `prompt-library` before anything is deleted.
+  This is what makes `rsync --delete` / `robocopy /MIR` safe; do not weaken it in either script.
+- The same **config-dir resolution order**: `$ESPANSO_CONFIG_DIR` → `espanso path config` → per-OS
+  default, plus the check that the resolved directory actually exists.
+- **Validate then restart then verify**: `espanso match list` to parse the config, `espanso restart`,
+  then `espanso status` (exit 0 running / 4 not) because `restart` reports success even when the
+  worker dies on startup.
+- Equivalent flags: `--dry-run`/`-DryRun`, `--no-restart`/`-NoRestart`, `--target`/`-Target`.
+
+Platform detail worth keeping in mind:
+
+- `robocopy` returns **0–7 on success** and ≥8 on failure. It can never be tested as a plain boolean,
+  neither under `set -e` nor via `$LASTEXITCODE -ne 0`.
+- WSL reports `Linux` from `uname` and has its own Espanso and filesystem, so the `.sh` correctly
+  treats it as plain unix — it is not a route to managing a Windows install.
 - Prompt files must stay LF-only. `.gitattributes` enforces this because Espanso expands bodies
-  verbatim, so a CRLF checkout injects `\r` into every expansion.
+  verbatim, so a CRLF checkout injects `\r` into every expansion. PowerShell runs LF scripts fine.
+- `sync-prompts.ps1` has **never been executed** — see the note in Validation expectations below.
 
 ## Validation expectations
 
@@ -176,8 +192,12 @@ Then confirm the trigger actually registered. The CLI may not be on `PATH`:
 ```bash
 # macOS
 /Applications/Espanso.app/Contents/MacOS/espanso match list --only-triggers | grep '^:p\.'
-# Windows (Git Bash) / Linux, once `espanso env-path register` has run
+# Linux, or anywhere `espanso env-path register` has run
 espanso match list --only-triggers | grep '^:p\.'
+```
+```powershell
+# Windows
+espanso match list --only-triggers | Select-String '^:p\.'
 ```
 
 A non-zero exit from `espanso match list` means the config is broken — the sync script turns that
@@ -193,10 +213,23 @@ The basename must be `prompt-library`; the script refuses anything else, and it 
 resolved config directory that doesn't exist. Those guards are what make mirroring-with-deletion safe
 here — do not remove or weaken them.
 
-To exercise the Windows code path from macOS or Linux, stub `uname`, `cygpath` and `robocopy` onto a
-minimal `PATH` (with no `rsync`) and run the script against a fake config tree. That is how the
-robocopy fallback, the `cygpath` guard and the CR-trimming of `espanso path config` were verified
-without a Windows machine.
+### `sync-prompts.ps1` is unverified
+
+It was written on a macOS machine with no PowerShell installed, so it has **never been run** — not
+even parsed. Treat it as unproven until someone executes it on Windows. It performs a destructive
+mirror (`robocopy /MIR`), so the first run there should be:
+
+```powershell
+.\sync-prompts.ps1 -DryRun                              # /L, writes nothing
+.\sync-prompts.ps1 -Target $env:TEMP\pl-test\prompt-library   # away from the real config
+.\sync-prompts.ps1 -Target $env:TEMP\pl-test\nope       # must refuse: wrong leaf name
+.\sync-prompts.ps1                                      # only then, for real
+```
+
+If you have PowerShell available, `Get-Command -Syntax` and
+`[System.Management.Automation.Language.Parser]::ParseFile(...)` give a parse check without running
+anything. The `.sh` counterpart is fully exercised on macOS; do not assume the `.ps1` is equally
+trustworthy just because it mirrors it.
 
 Expansion behavior itself (does the text appear, does the form dialog render) can only be verified
 by typing the trigger in a real text field. Ask Francisco to do that rather than claiming it works.
