@@ -20,9 +20,31 @@ Prompts live under `espanso/match/prompt-library/`:
 |---|---|---|
 | `:p.check.plan` | Plan self-check: clarify, audit against the codebase, edit the plan in place | `standard/check-plan.yml` |
 | `:p.check.impl` | Implementation self-check: accuracy, completeness, run the tests | `standard/check-impl.yml` |
+| `:p.review.mr` | **Form.** Nudge to review a merge-request *stack* as one change | `templates/review-mr.yml` |
 
-The `:p.check.*` group is the review-your-own-work family; keep new members of it under that
-namespace so typing `:p.check.` narrows to them in the search bar.
+Groups so far: `:p.check.*` is review-your-own-work, `:p.review.*` is review-someone's-change. Keep
+new prompts inside an existing group where one fits, so typing the group prefix narrows the search bar.
+
+### About `:p.review.mr`
+
+Deliberately a **nudge, not a checklist**. A coding agent already knows how to review code; what it
+can't know is that one change is split across repositories. So the prompt spends its words on the
+senior-engineer framing, the shape of the stack, and "read the real diffs" — and leaves the reviewing
+to the reviewer.
+
+Its single field takes the whole stack as `role: reference`, one per line, in dependency order:
+
+```
+dagster:  !9
+backend:  !123
+openapi:  !45
+frontend: !678
+```
+
+One multiline field is the only way an Espanso form can accept a variable number of MRs, and the line
+order carries the stack shape. Written for **terminal coding agents**: it passes references rather
+than diff text and never names a specific tool, telling the agent to get the diffs from repo context
+or whatever skills and tooling it has, and to ask rather than guess.
 
 ## Working model
 
@@ -122,16 +144,18 @@ the table is only the last resort.
 - A form input renders only 100px wide **unless the field is alone on its line**. The docs put it as:
   *"Input fields are 100 pixels wide, but if their line contains no other text they expand to fit the
   width of the longest line of text plus input-boxes, in the form layout."* Keep long fields — pasted
-  code, long descriptions — on their own line:
+  code, long descriptions, and any `choice` whose values are longer than a word or two — on their own
+  line, with the label on the line before:
 
   ```yaml
   form: |
-    Explain this [[language]] code:
-    [[code]]
+    The merge requests, one per line as `role: reference`:
+    [[mrs]]
   ```
 
-  Widening every field globally needs `max_form_width` / `max_form_height` in
-  `config/default.yml`, which this repo deliberately does not manage (see below).
+  That is how `templates/review-mr.yml` lays out its field. Widening fields globally instead would
+  need `max_form_width` / `max_form_height` in `config/default.yml`, which this repo does not manage
+  (see below).
 - Submit a form with `Ctrl+Enter`.
 
 ## New machine setup
@@ -142,6 +166,76 @@ the table is only the last resort.
 2. Optional but convenient: `espanso env-path register` to put the CLI on `PATH`.
 3. Clone this repo.
 4. `bash sync-prompts.sh` — on Windows, from Git Bash.
+5. **Set the paste timing by hand** in `<espanso config>/config/default.yml`. Not optional on macOS,
+   and not managed by this repo:
+
+   ```yaml
+   paste_shortcut_event_delay: 30   # stock 10ms drops the CMD modifier
+   pre_paste_delay: 400             # stock 300ms
+   ```
+
+   Every prompt here is far longer than the `clipboard_threshold` of 100 characters, so all of them
+   are injected via the clipboard as copy + simulated Cmd+V. At the stock 10 ms, macOS intermittently
+   loses the Cmd and the expansion arrives as a bare `V`. See Troubleshooting below.
+
+## Troubleshooting
+
+**Emergency stop.** Press **ALT twice** to toggle Espanso off (`toggle_key: ALT`, the stock default).
+Use this the moment an expansion misbehaves — you do not have to quit the app you're typing in. Then
+`espanso start` / `espanso status` from a terminal to recover.
+
+### A literal `V` appears, then backspaces run away
+
+This is macOS **Secure Input**, not a broken prompt file. Prompts here are far longer than the
+`clipboard_threshold: 100` default, so Espanso always expands them via the clipboard: it copies the
+text and injects Cmd+V. Under Secure Input the Cmd modifier is swallowed, leaving a bare `V`, while
+the backspaces already queued to erase the trigger keep firing. The worker can then panic and die, so
+Espanso stops responding entirely.
+
+Diagnose and fix:
+
+```bash
+espanso log | grep -i 'secure input'   # confirms it, and names the suspected app
+espanso workaround secure-input        # automates the usual fix
+espanso status                         # 0 = running, 4 = not running
+espanso start                          # after a worker crash
+```
+
+Espanso's guess about *which* app holds Secure Input is explicitly unreliable — it may name
+`Terminal` when the real holder is something else. Common causes are a password field with focus, a
+keychain prompt, and Terminal.app's **Secure Keyboard Entry** menu option
+(`defaults read com.apple.Terminal SecureKeyboardEntry` → `1` means on).
+
+Full detail: [Troubleshooting: secure input](https://espanso.org/docs/troubleshooting/secure-input/).
+
+**The standing fix** is the paste timing from step 5 of new-machine setup:
+
+```yaml
+paste_shortcut_event_delay: 30
+pre_paste_delay: 400
+```
+
+Confirm it is actually applied — the file is machine-local, so a fresh machine won't have it:
+
+```bash
+grep -vE '^\s*(#|$)' "$(espanso path config)/config/default.yml"
+```
+
+Do **not** reach for `force_mode: keys` on a prompt to dodge the clipboard. It is a valid per-match
+option, but `keys` types each newline as a **Return keypress** — `:p.review.mr` alone holds 70 of
+them, so in any chat input it would submit itself as ~70 separate messages. Clipboard injection is the
+correct mechanism for multi-line prompts; the delays above are what make it reliable.
+
+If a bare `V` still appears after all of that, the remaining levers are `backend: Clipboard` (stop
+`auto` from second-guessing) and a higher `pre_paste_delay`.
+
+### Other checks
+
+- `espanso status` — is it even running? A crashed worker leaves it stopped. `sync-prompts.sh`
+  verifies this after restarting, so a failing sync means the daemon really is down.
+- `espanso match list --only-triggers` — did your prompt load at all? If it's missing, the file is
+  either invalid YAML, outside `match/`, or `_`-prefixed.
+- `espanso log` — the worker logs config-parse errors here.
 
 ## Reference
 

@@ -1,0 +1,36 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/espanso/espanso/dev/schemas/match.schema.json
+matches:
+  - trigger: ":p.review.mr"
+    label: "Prompt template: review a merge-request stack"
+    # Deliberately a nudge, not a checklist: the agent already knows how to
+    # review code. What it cannot know is that one change is split across
+    # repos, so that is what the prompt spends its words on.
+    #
+    # One multiline field holds the whole stack — the only way an Espanso form
+    # can take a variable number of MRs, and it keeps the field alone on its
+    # line, which is what lets it render full width rather than 100px.
+    form: |
+      Review the following merge requests as a senior engineer who will have to maintain this code.
+
+      The merge requests, in dependency order, one per line as `role: reference`:
+      [[mrs]]
+
+      These are one logical change split across repositories. A code MR usually has a
+      companion MR in the capability library that holds the OpenAPI spec, and consumers
+      such as a frontend or a pipeline sit downstream of that spec. Review them as a
+      single change: check that the implementation, the spec and its consumers agree
+      with each other, and that they can merge in the order given without leaving
+      anything broken in between.
+
+      Read the real diffs before judging anything. Get them from the repository context
+      and whatever review skills or tooling you have available, and ask me if you cannot
+      reach one — never infer a diff from a title.
+
+      Lead with blocking defects, then anything else worth fixing. Skip what a linter or
+      formatter already catches.
+    form_fields:
+      mrs:
+        multiline: true
+        # Single-line format hint. Not a three-role scaffold: an unedited
+        # "openapi:" line would hand the reviewer a role with no reference.
+        default: "backend: "

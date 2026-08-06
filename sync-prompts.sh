@@ -228,6 +228,22 @@ validate_config() {
   fi
 }
 
+# `espanso restart` reports success even when the worker then dies on startup,
+# so confirm the daemon is actually up. `status` exits 0 running / 4 not running.
+verify_running() {
+  local espanso_bin="$1"
+  local attempt
+
+  for attempt in 1 2 3 4 5; do
+    if "${espanso_bin}" status >/dev/null 2>&1; then
+      return 0
+    fi
+    sleep 1
+  done
+
+  die "espanso is not running after restart. Check '${espanso_bin} log'; on macOS the usual cause is Secure Input being held by another app."
+}
+
 main() {
   local dry_run="0"
   local restart="1"
@@ -310,7 +326,8 @@ main() {
   # deterministic instead of depending on the file watcher.
   if [[ "${restart}" == "1" ]]; then
     "${espanso_bin}" restart
-    printf 'espanso restarted\n'
+    verify_running "${espanso_bin}"
+    printf 'espanso restarted and running\n'
   else
     printf 'skipping restart as requested\n'
   fi

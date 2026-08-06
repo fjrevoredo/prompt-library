@@ -65,6 +65,16 @@ fastest ground truth for CLI flags; prefer running them over trusting this table
 - `config/default.yml` in the Espanso config dir. Machine-local settings; this repo deliberately
   does not manage it. That includes `max_form_width` / `max_form_height`, so work around form
   width limits by layout instead (see below).
+
+  Two options in it are nonetheless **load-bearing for every prompt here**, and are documented as a
+  manual new-machine step in `README.md` rather than synced:
+
+  ```yaml
+  paste_shortcut_event_delay: 30   # stock 10ms; macOS drops the CMD modifier
+  pre_paste_delay: 400             # stock 300ms
+  ```
+
+  If prompts expand as a bare `V`, check these before suspecting the yml.
 - `match/base.yml` and `match/packages/` in the Espanso config dir. Note `packages/` lives
   **inside** `match/` — never widen the rsync target to `match/` itself.
 - Packaging this as an Espanso external package. Considered and rejected: it adds a
@@ -103,6 +113,33 @@ fastest ground truth for CLI flags; prefer running them over trusting this table
   code or a paragraph must therefore sit alone on its own line in the `form:` template.
   `max_form_width` / `max_form_height` would fix this globally but live in `config/default.yml`, which
   is out of scope.
+
+## Domain context for review prompts
+
+Francisco's changes usually span **several merge requests in parallel**, not one:
+
+- One or more **code MRs** — the feature itself.
+- Optionally a **companion spec MR** in the separate capability-library repo that holds the OpenAPI
+  spec. Any endpoint change means at least two MRs.
+- Stacks build up from there, e.g. `backend → openapi → frontend`, or
+  `dagster ← backend → openapi → frontend`.
+
+Any prompt about reviewing changes must therefore accept **1+ code MRs and 0+ spec MRs** and point the
+reviewer at cross-MR consistency — a prompt that reviews one diff in isolation is at the wrong
+altitude for this workflow.
+
+An Espanso form has fixed fields, so "N of something" can only be a multiline field. `review-mr.yml`
+takes the whole stack in one `role: reference` list, ordered by dependency.
+
+**Keep prompt bodies short.** These are nudges, not checklists: state the role to adopt, the context
+the agent cannot infer, and what to lead with. An earlier version of `review-mr.yml` enumerated review
+dimensions and rules across 3345 characters and was rejected as too complicated — a coding agent
+already knows how to review code. Spend the words on what is specific to this workflow.
+
+These prompts target **terminal coding agents**. Do not name a specific tool (`glab`, an API, a
+particular skill) in a prompt body: tell the agent to obtain what it needs from repo context, its
+available skills and tooling, and to stop and ask rather than guess. Naming the tool bakes in an
+implementation detail that varies per machine and per agent.
 
 ## Cross-platform expectations
 
@@ -162,6 +199,27 @@ without a Windows machine.
 
 Expansion behavior itself (does the text appear, does the form dialog render) can only be verified
 by typing the trigger in a real text field. Ask Francisco to do that rather than claiming it works.
+
+### When an expansion misbehaves, read the log before touching the yml
+
+`espanso log` is the first move, not the last. A real incident: typing a trigger produced a literal
+`V` followed by runaway backspaces, and the log showed macOS Secure Input had been acquired and the
+worker had then panicked with `broken UI->Engine channel`. The prompt files were fine.
+
+Mechanism worth knowing, because every prompt here is affected: `clipboard_threshold` defaults to 100
+characters, so these prompts are *always* expanded via the clipboard, i.e. copy + inject Cmd+V. Any
+condition that eats the Cmd modifier — Secure Input above all — degrades that into a bare `V`.
+
+- `espanso log | grep -i 'secure input'` — Espanso's guess at the culprit app is documented as
+  unreliable; do not repeat it as fact.
+- `espanso status` — exit 0 running, exit 4 not running. A worker panic leaves it stopped, so verify
+  before concluding a yml change had any effect at all.
+- The user's emergency stop is pressing **ALT twice** (`toggle_key: ALT`).
+
+Never set `force_mode: keys` on a prompt to avoid the clipboard. It is a real per-match option
+(`force_mode: clipboard | keys` in the match schema), but `keys` injects each newline as a **Return
+keypress**. These prompts are 10–70 lines, so in any chat input that submits the message dozens of
+times mid-prompt. Multi-line prompts must go through the clipboard; fix the paste timing instead.
 
 ## Working expectations
 
