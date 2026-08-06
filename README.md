@@ -21,6 +21,7 @@ Prompts live under `espanso/match/prompt-library/`:
 | `:p.check.plan` | Plan self-check: clarify, audit against the codebase, edit the plan in place | `standard/check-plan.yml` |
 | `:p.check.impl` | Implementation self-check: accuracy, completeness, run the tests | `standard/check-impl.yml` |
 | `:p.review.mr` | **Form.** Nudge to review a merge-request *stack* as one change | `templates/review-mr.yml` |
+| `:p.review.impl` | **Form.** Adversarial review of a plan's implementation, writes a findings report | `templates/review-impl.yml` |
 
 Groups so far: `:p.check.*` is review-your-own-work, `:p.review.*` is review-someone's-change. Keep
 new prompts inside an existing group where one fits, so typing the group prefix narrows the search bar.
@@ -45,6 +46,21 @@ One multiline field is the only way an Espanso form can accept a variable number
 order carries the stack shape. Written for **terminal coding agents**: it passes references rather
 than diff text and never names a specific tool, telling the agent to get the diffs from repo context
 or whatever skills and tooling it has, and to ask rather than guess.
+
+### `:p.check.impl` vs `:p.review.impl`
+
+Both concern a finished implementation, but they are for different agents:
+
+- **`:p.check.impl`** — the agent that *did* the work checking itself, in the same session. Static
+  text, no output file, fixes go straight into the code.
+- **`:p.review.impl`** — a *fresh* agent reviewing someone else's completed plan adversarially. Takes
+  the plan's path and writes a prioritized findings report to a new markdown file beside it
+  (`docs/plan.md` → `docs/plan-review.md`), so the report can be handed to another agent to act on.
+
+`:p.review.impl` is told to include only findings that matter — objectively wrong, out of scope,
+contradicting or missing from the plan, poor quality, bad practice — and that a short report is a good
+outcome rather than something to pad. Each finding carries a rationale and concrete references so the
+recipient can confirm it independently.
 
 ## Working model
 

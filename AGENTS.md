@@ -104,9 +104,10 @@ fastest ground truth for CLI flags; prefer running them over trusting this table
 ### Form specifics
 
 - `form:` and `replace:` are mutually exclusive. `form:` replaces `replace:`; setting both is an error.
-- Placeholders are `[[name]]`; each is configured under `form_fields:`.
-  Field types used here: plain (with optional `default:`), `type: choice` with `values:`, and
-  `multiline: true`.
+- Placeholders are `[[name]]`, configured under `form_fields:`. A placeholder with **no** entry there
+  is simply a plain single-line text field, so `form_fields:` can be omitted entirely when that is all
+  you need (`review-impl.yml` does this). Field types available: plain (with optional `default:`),
+  `type: choice` or `type: list` with `values:`, and `multiline: true`.
 - A form input renders only 100px wide **unless it is the only thing on its line** — quoting the docs:
   *"Input fields are 100 pixels wide, but if their line contains no other text they expand to fit the
   width of the longest line of text plus input-boxes, in the form layout."* Any field expected to hold

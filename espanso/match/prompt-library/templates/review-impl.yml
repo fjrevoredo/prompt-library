@@ -1,0 +1,37 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/espanso/espanso/dev/schemas/match.schema.json
+matches:
+  - trigger: ":p.review.impl"
+    label: "Prompt template: adversarial review of a plan's implementation"
+    # The counterpart to :p.check.impl — that one is the implementing agent
+    # checking its own work, this one is a fresh agent trying to break it.
+    #
+    # `plan` takes a repo-relative path, so it sits alone on its line to render
+    # full width instead of 100px. No form_fields block needed: a placeholder
+    # with no configuration is a plain single-line text field.
+    form: |
+      Perform an adversarial review of the implementation of this plan:
+      [[plan]]
+
+      Another coding agent has already worked through that plan and reported it as
+      complete. Do not take that at face value. Read the plan, then read the code that
+      was actually written for it, and verify rather than assume.
+
+      Judge it on three things, in this order of importance:
+
+      1. Adherence to the plan — steps skipped, steps done differently than specified,
+         anything that contradicts the plan, and anything built that the plan never
+         asked for.
+      2. Adherence to this repository's own conventions and best practices.
+      3. General quality of the code that was written.
+
+      Write the result to a new markdown file beside the plan, named after it with a
+      `-review` suffix. It must be a list of actionable findings ordered by priority,
+      most important first. For each finding give the rationale and concrete references
+      — file and line, the plan step it violates, the convention it breaks — so that the
+      coding agent receiving this report can confirm the finding independently and fix
+      it without having to reconstruct your reasoning.
+
+      Include only findings that genuinely matter: things objectively wrong, out of
+      scope, contradicting or missing from the plan, poor quality, or bad practice.
+      Leave out minor details, stylistic preferences, and anything a formatter or linter
+      already handles. A short report is a good outcome — do not pad it to look thorough.
