@@ -72,8 +72,11 @@ fastest ground truth for CLI flags; prefer running them over trusting this table
 
 ## Authoring conventions
 
-- Trigger prefix is **`:p.`** — e.g. `:p.review`, `:p.explain`. Never introduce a prompt trigger
-  without it, and never collide with the stock `:espanso` / `:date` / `:shell` matches.
+- Trigger prefix is **`:p.`** — e.g. `:p.check.plan`, `:p.check.impl`. Never introduce a prompt
+  trigger without it, and never collide with the stock `:espanso` / `:date` / `:shell` matches.
+- Related prompts get a shared second segment (`:p.check.*` is the review-your-own-work family), so
+  typing the group prefix narrows the search bar to them. Put a new prompt in an existing group
+  before inventing a new one.
 - Every match must have a `label:`. Espanso's search bar surfaces the label, and that is the
   discovery interface for this library. Convention: `"Prompt: ..."` for static prompts,
   `"Prompt template: ..."` for form prompts.

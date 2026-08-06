@@ -1,0 +1,15 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/espanso/espanso/dev/schemas/match.schema.json
+matches:
+  - trigger: ":p.check.plan"
+    label: "Prompt: plan self-check (clarify, audit, edit in place)"
+    replace: |
+      ### Plan Self-Check
+
+      1. **Clarification:** Ask any blocking questions required to make the plan unambiguous and fully actionable.
+      2. **Self-Check:** Audit the plan against the codebase for accurate file paths, logical execution order, missing edge cases, and test strategy.
+      3. **In-Place Edits:** Update the original plan document directly to integrate all corrections, missing context, and updates into the core steps.
+
+      **STRICT RULES:**
+      * Do NOT append "Notes," "Gotchas," "Addendums," or conversational commentary at the end.
+      * Refactor existing steps directly so the document remains a clean, single-source-of-truth blueprint.
+      * The final plan must be fully self-contained for execution in a clean session without conversational history.

@@ -14,6 +14,16 @@ Prompts live under `espanso/match/prompt-library/`:
 - `standard/` — fixed prompts, expanded verbatim
 - `templates/` — form-backed prompts that pop up a dialog to fill in placeholders
 
+## Current prompts
+
+| Trigger | What it is | File |
+|---|---|---|
+| `:p.check.plan` | Plan self-check: clarify, audit against the codebase, edit the plan in place | `standard/check-plan.yml` |
+| `:p.check.impl` | Implementation self-check: accuracy, completeness, run the tests | `standard/check-impl.yml` |
+
+The `:p.check.*` group is the review-your-own-work family; keep new members of it under that
+namespace so typing `:p.check.` narrows to them in the search bar.
+
 ## Working model
 
 The repo is authoritative. The Espanso config directory is a disposable mirror.
@@ -86,13 +96,14 @@ the table is only the last resort.
 
 ## Authoring conventions
 
-- **Trigger prefix `:p.`** — `:p.review`, `:p.explain`. Namespaced, short, and no collision with
-  the stock `:espanso` / `:date` / `:shell` matches in `match/base.yml`.
+- **Trigger prefix `:p.`** — `:p.check.plan`, `:p.check.impl`. Namespaced, short, and no collision
+  with the stock `:espanso` / `:date` / `:shell` matches in `match/base.yml`. Group related prompts
+  with a second dotted segment (`:p.check.*`) so the search bar filters them together.
 - **Every match needs a `label:`.** Espanso's search bar (`ALT+SPACE` by default) shows the label,
   and that search bar is the discovery interface for the library. Prefix them consistently:
   `"Prompt: ..."` for static, `"Prompt template: ..."` for forms.
-- **One prompt per file**, filename matching the trigger — `:p.review` → `standard/code-review.yml`
-  is fine; the point is a 1:1, greppable mapping.
+- **One prompt per file**, filename tracking the trigger — `:p.check.plan` →
+  `standard/check-plan.yml`; the point is a 1:1, greppable mapping.
 - `standard/` for fixed prompts, `templates/` for form prompts. Subfolders are free organization:
   Espanso loads every `.yml` under `match/` recursively.
 - **Never prefix a filename with `_`.** Espanso treats `_`-prefixed files as includes and does not

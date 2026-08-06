@@ -1,0 +1,15 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/espanso/espanso/dev/schemas/match.schema.json
+matches:
+  - trigger: ":p.check.impl"
+    label: "Prompt: implementation self-check (accuracy, completeness, tests)"
+    replace: |
+      ### Implementation Self-Check
+
+      1. **Accuracy & Correctness Audit:** Trace the changed code against the plan and existing codebase to ensure business logic is mathematically and logically sound, edge cases are explicitly handled, and no regressions were introduced.
+      2. **Completeness Verification:** Cross-reference every requirement in the original plan. Verify that zero steps were skipped, all planned files/functions were written, and no placeholder logic or `TODO`s remain.
+      3. **Validation & Runtime Test:** Execute relevant build scripts, type-checkers, and tests. Resolve any failures, warnings, or runtime errors directly in the code before concluding the task.
+
+      **STRICT RULES:**
+      * Do NOT report work as complete if any logic is unverified, edge cases are unhandled, or tests are failing.
+      * Fix errors and incomplete code directly in the files—do not document bugs or technical debt for a later pass.
+      * Strictly limit code modifications to the scope of the plan without introducing unnecessary rewrites or scope creep.
