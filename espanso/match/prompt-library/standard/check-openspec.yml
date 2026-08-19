@@ -1,0 +1,14 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/espanso/espanso/dev/schemas/match.schema.json
+matches:
+  - trigger: ":p.check.openspec"
+    label: "Prompt: OpenSpec artifact self-check (audit, reconcile, implementation-ready)"
+    replace: |
+      ### OpenSpec Self-Check
+
+      You just created an OpenSpec change. Read its instructions and all required artifacts, then audit them against the request, current code and specifications, and repository conventions.
+
+      Verify that the intent, design, specification deltas, scenarios, and tasks agree; every requested behavior has a clear, testable requirement and an actionable task; every task maps to a requirement; and paths, dependencies, ordering, compatibility, errors, edge cases, scope, and validation are correct. Remove omissions, contradictions, assumptions, and unresolved placeholders.
+
+      Assume a new implementation agent has no conversation history and only the repository and these artifacts. Add all required context, decisions, constraints, and acceptance details to the artifacts. Run available OpenSpec and repository validation.
+
+      Edit the artifacts in place to fix every issue. Do not change source code or append review notes, addendums, or commentary. Do not declare the change ready if it is not fully testable, traceable, consistent, and self-contained. Ask about any blocking decision that cannot be resolved from the request, repository, or artifacts.

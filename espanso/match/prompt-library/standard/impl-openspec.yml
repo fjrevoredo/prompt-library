@@ -1,0 +1,15 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/espanso/espanso/dev/schemas/match.schema.json
+matches:
+  - trigger: ":p.impl.openspec"
+    label: "Prompt: implement an OpenSpec change (read, clarify, implement)"
+    replace: |
+      ### OpenSpec Implementation
+
+      An OpenSpec change is in this repository. Before coding:
+
+      1. Read the complete change and its instructions.
+      2. Read the related code, specifications, and tests.
+      3. Check that the plan and code agree, the scope is clear, and no requirements or decisions are missing.
+      4. Ask any clarifying questions needed. Do not guess or start with unresolved blockers.
+
+      When everything is clear, apply the change and run the relevant validation and tests. Keep the implementation within the change scope.

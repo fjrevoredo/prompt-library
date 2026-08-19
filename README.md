@@ -19,11 +19,13 @@ Prompts live under `espanso/match/prompt-library/`:
 | Trigger | What it is | File |
 |---|---|---|
 | `:p.check.plan` | Plan self-check: clarify, audit against the codebase, edit the plan in place | `standard/check-plan.yml` |
+| `:p.check.openspec` | OpenSpec artifact self-check: audit, reconcile, and make the change implementation-ready | `standard/check-openspec.yml` |
 | `:p.check.impl` | Implementation self-check: accuracy, completeness, run the tests | `standard/check-impl.yml` |
+| `:p.impl.openspec` | OpenSpec implementation: read, clarify, implement, and validate the change | `standard/impl-openspec.yml` |
 | `:p.review.mr` | **Form.** Nudge to review a merge-request *stack* as one change | `templates/review-mr.yml` |
 | `:p.review.impl` | **Form.** Adversarial review of a plan's implementation, writes a findings report | `templates/review-impl.yml` |
 
-Groups so far: `:p.check.*` is review-your-own-work, `:p.review.*` is review-someone's-change. Keep
+Groups so far: `:p.check.*` is review-your-own-work, `:p.impl.*` is implementation workflows, and `:p.review.*` is review-someone's-change. Keep
 new prompts inside an existing group where one fits, so typing the group prefix narrows the search bar.
 
 ### About `:p.review.mr`
